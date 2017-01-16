@@ -118,33 +118,39 @@ public class AppSetupActivity extends AppCompatActivity implements View.OnClickL
                 Database externalDatabase = externalManager.getExistingDatabase(DatabaseManagerConstants.DB_NAME);
 
                 // Use a transaction to ensure that the sync is an all-or-nothing operation
-                internalDatabase.beginTransaction();
-
-                // Copy everything into the internal database
-                Query query = externalDatabase.createAllDocumentsQuery();
-                query.setAllDocsMode(Query.AllDocsMode.ALL_DOCS);
-                QueryEnumerator result = query.run();
-                Log.d("wildrank", "QueryEnumerator length: " + result.getCount());
-                for (Iterator<QueryRow> it = result; it.hasNext(); ) {
-                    QueryRow row = it.next();
-                    Document existingDoc = row.getDocument();
-                    Log.d("wildrank", "Document contents: " + existingDoc.getProperties().toString());
-                    Document doc = internalDatabase.getDocument(existingDoc.getId());
-                    UnsavedRevision revision = doc.createRevision();
-                    Map<String, Object> existingProperties = existingDoc.getProperties();
+                internalDatabase.runInTransaction(() -> {
                     try {
-                        revision.setProperties(existingProperties);
-                        revision.save();
-                    } catch (CouchbaseLiteException e) {
-                        Log.d("Wildrank", "Error writing document");
+                        // Copy everything into the internal database
+                        Query query = externalDatabase.createAllDocumentsQuery();
+                        query.setAllDocsMode(Query.AllDocsMode.ALL_DOCS);
+                        QueryEnumerator result = query.run();
+                        Log.d("wildrank", "QueryEnumerator length: " + result.getCount());
+                        for (Iterator<QueryRow> it = result; it.hasNext(); ) {
+                            QueryRow row = it.next();
+                            Document existingDoc = row.getDocument();
+                            Log.d("wildrank", "Document contents: " + existingDoc.getProperties().toString());
+                            Document doc = internalDatabase.getDocument(existingDoc.getId());
+                            UnsavedRevision revision = doc.createRevision();
+                            Map<String, Object> existingProperties = existingDoc.getProperties();
+                            try {
+                                revision.setProperties(existingProperties);
+                                revision.save();
+                            } catch (CouchbaseLiteException e) {
+                                Log.d("Wildrank", "Error writing document");
+                                e.printStackTrace();
+                            }
+                        }
+
+                        DatabaseManager.getInstance(AppSetupActivity.this).trackCurrentInternalDatabaseState();
+                        DatabaseManager.getInstance(AppSetupActivity.this).trackCurrentExternalDatabaseState(externalDatabase);
+                    } catch (Exception e) {
                         e.printStackTrace();
+                        return false;
                     }
-                }
 
-                DatabaseManager.getInstance(AppSetupActivity.this).trackCurrentInternalDatabaseState();
-                DatabaseManager.getInstance(AppSetupActivity.this).trackCurrentExternalDatabaseState(externalDatabase);
+                    return true;
+                });
 
-                internalDatabase.endTransaction(true);
 
                 externalDatabase.close();
             } catch (Exception e) {

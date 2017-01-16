@@ -1,5 +1,6 @@
 package org.wildstang.wildrank.androidv2.activities;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
@@ -262,11 +263,10 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
-    private class ManageUsersDialog extends DialogFragment {
+    public static class ManageUsersDialog extends DialogFragment {
         private ListView usersList;
 
         public ManageUsersDialog() {
-            // Empty constructor
         }
 
         @NonNull
@@ -276,9 +276,9 @@ public class HomeActivity extends AppCompatActivity {
                     .setTitle("Manage Users")
                     .setPositiveButton("Done", (dialog, which) -> dialog.dismiss())
                     .setNegativeButton("Log out all users", (dialog1, which) -> {
-                        UserHelper.logOutAllUsers(HomeActivity.this);
-                        startActivity(new Intent(HomeActivity.this, UserLoginActivity.class));
-                        HomeActivity.this.finish();
+                        UserHelper.logOutAllUsers(getContext());
+                        startActivity(new Intent(getContext(), UserLoginActivity.class));
+                        getActivity().finish();
                     })
                     .setNeutralButton("Add user", (dialog, which) -> {
                         Intent i = new Intent(getActivity(), UserLoginActivity.class);
@@ -312,7 +312,7 @@ public class HomeActivity extends AppCompatActivity {
                         // No more users are logged in
                         // Prompt a new one to log in
                         startActivity(new Intent(getActivity(), UserLoginActivity.class));
-                        finish();
+                        getActivity().finish();
                     }
                     dialog1.dismiss();
                 });
