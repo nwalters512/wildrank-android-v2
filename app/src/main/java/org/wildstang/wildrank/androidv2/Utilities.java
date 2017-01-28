@@ -11,10 +11,6 @@ import java.util.Map;
 
 public class Utilities {
 
-    public static String getExternalRootDirectory() {
-        return "/storage/usbdisk0/WildRank/cblite";
-    }
-
     public static Object[] getRedTeamsFromMatchDocument(Document matchDocument) {
         Map<String, Object> properties = matchDocument.getProperties();
         Map<String, Object> alliances = (Map<String, Object>) properties.get("alliances");

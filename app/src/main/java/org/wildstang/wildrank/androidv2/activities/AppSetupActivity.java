@@ -3,6 +3,7 @@ package org.wildstang.wildrank.androidv2.activities;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -26,11 +27,14 @@ import com.couchbase.lite.android.AndroidContext;
 
 import org.wildstang.wildrank.androidv2.R;
 import org.wildstang.wildrank.androidv2.SyncUtilities;
-import org.wildstang.wildrank.androidv2.Utilities;
 import org.wildstang.wildrank.androidv2.data.DatabaseManager;
 import org.wildstang.wildrank.androidv2.data.DatabaseManagerConstants;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -54,12 +58,16 @@ public class AppSetupActivity extends AppCompatActivity implements View.OnClickL
     }
 
     private void beginDataLoad() {
-        if (!SyncUtilities.isFlashDriveConnected()) {
-            showExternalWarning();
+        if (SyncUtilities.useSAF()) {
+            SyncUtilities.openFileChooser(this);
         } else {
-            // Load data from the flash drive
-            new SetupTask().execute();
-            loadProgressBar.setVisibility(View.VISIBLE);
+            if (!SyncUtilities.isFlashDriveConnected(getApplicationContext())) {
+                showExternalWarning();
+            } else {
+                // Load data from the flash drive
+                new SetupTask().execute();
+                loadProgressBar.setVisibility(View.VISIBLE);
+            }
         }
     }
 
@@ -95,6 +103,25 @@ public class AppSetupActivity extends AppCompatActivity implements View.OnClickL
             setResult(Activity.RESULT_OK);
             startActivity(new Intent(this, HomeActivity.class));
             finish();
+        } else if (requestCode == SyncUtilities.REQUEST_CODE_OPEN && resultCode == Activity.RESULT_OK) {
+            //Copy the external database to internal storage, then sync from it
+            Uri externalDatabase = data.getData();
+            try {
+                InputStream externalDatabaseStream = getContentResolver().openInputStream(externalDatabase);
+                File internalDBCopyFolder = new File(SyncUtilities.getExternalRootDirectory(getApplicationContext()) + File.separator + "wildrank.cblite2");
+                File internalDBCopyFile = new File(internalDBCopyFolder.getPath() + File.separator + "db.sqlite3");
+                if (!internalDBCopyFile.exists()) {
+                    internalDBCopyFolder.mkdirs();
+                    internalDBCopyFile.createNewFile();
+                }
+                OutputStream internalDBCopyStream = new FileOutputStream(internalDBCopyFile);
+                SyncUtilities.copyFromStreamToStream(externalDatabaseStream, internalDBCopyStream);
+                new SetupTask().execute();
+                loadProgressBar.setVisibility(View.VISIBLE);
+            } catch (IOException e) {
+                e.printStackTrace();
+                Toast.makeText(this, e.getMessage() + " in " + getClass().getCanonicalName(), Toast.LENGTH_LONG).show();
+            }
         }
     }
 
@@ -105,11 +132,11 @@ public class AppSetupActivity extends AppCompatActivity implements View.OnClickL
             try {
                 Manager internalManager = DatabaseManager.getInstance(AppSetupActivity.this).getInternalManager();
 
-                // Custom Couchbase Manager that points to the flash drive
+                // Custom Couchbase Manager that points to the flash drive or internal copy of the external database
                 Context context = new AndroidContext(AppSetupActivity.this) {
                     @Override
                     public File getFilesDir() {
-                        return new File(Utilities.getExternalRootDirectory() + "/");
+                        return new File(SyncUtilities.getExternalRootDirectory(getApplicationContext()) + "/");
                     }
                 };
                 Manager externalManager = new Manager(context, Manager.DEFAULT_OPTIONS);
@@ -150,7 +177,6 @@ public class AppSetupActivity extends AppCompatActivity implements View.OnClickL
 
                     return true;
                 });
-
 
                 externalDatabase.close();
             } catch (Exception e) {

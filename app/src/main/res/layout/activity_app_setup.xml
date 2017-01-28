@@ -21,7 +21,7 @@
             android:layout_height="wrap_content"
             android:gravity="center"
             android:text="Welcome to WildRank!\n\nConnect a flash drive to set up the tablet."
-            android:textSize="48dp" />
+            android:textSize="40sp" />
 
         <ProgressBar
             android:layout_width="wrap_content"
@@ -34,7 +34,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Begin loading data"
-            android:textSize="48dp" />
+            android:textSize="32sp" />
 
         <ProgressBar
             android:id="@+id/progress_bar"

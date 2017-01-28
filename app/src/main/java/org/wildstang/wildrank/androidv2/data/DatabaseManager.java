@@ -14,8 +14,8 @@ import com.couchbase.lite.UnsavedRevision;
 import com.couchbase.lite.View;
 import com.couchbase.lite.android.AndroidContext;
 
+import org.wildstang.wildrank.androidv2.SyncUtilities;
 import org.wildstang.wildrank.androidv2.UserHelper;
-import org.wildstang.wildrank.androidv2.Utilities;
 
 import java.io.File;
 import java.io.IOException;
@@ -122,7 +122,7 @@ public class DatabaseManager {
             com.couchbase.lite.Context externalContext = new AndroidContext(context.getApplicationContext()) {
                 @Override
                 public File getFilesDir() {
-                    return new File(Utilities.getExternalRootDirectory() + "/");
+                    return new File(SyncUtilities.getExternalRootDirectory(context));
                 }
             };
             if (externalManager == null) {

@@ -1,6 +1,5 @@
 package org.wildstang.wildrank.androidv2.activities;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
