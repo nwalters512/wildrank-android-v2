@@ -31,10 +31,7 @@ import org.wildstang.wildrank.androidv2.data.DatabaseManager;
 import org.wildstang.wildrank.androidv2.data.DatabaseManagerConstants;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -103,19 +100,11 @@ public class AppSetupActivity extends AppCompatActivity implements View.OnClickL
             setResult(Activity.RESULT_OK);
             startActivity(new Intent(this, HomeActivity.class));
             finish();
-        } else if (requestCode == SyncUtilities.REQUEST_CODE_OPEN && resultCode == Activity.RESULT_OK) {
+        } else if (SyncUtilities.isOkAndOpen(requestCode, resultCode)) {
             //Copy the external database to internal storage, then sync from it
             Uri externalDatabase = data.getData();
             try {
-                InputStream externalDatabaseStream = getContentResolver().openInputStream(externalDatabase);
-                File internalDBCopyFolder = new File(SyncUtilities.getExternalRootDirectory(getApplicationContext()) + File.separator + "wildrank.cblite2");
-                File internalDBCopyFile = new File(internalDBCopyFolder.getPath() + File.separator + "db.sqlite3");
-                if (!internalDBCopyFile.exists()) {
-                    internalDBCopyFolder.mkdirs();
-                    internalDBCopyFile.createNewFile();
-                }
-                OutputStream internalDBCopyStream = new FileOutputStream(internalDBCopyFile);
-                SyncUtilities.copyFromStreamToStream(externalDatabaseStream, internalDBCopyStream);
+                SyncUtilities.copyExternalToInternal(getContentResolver().openInputStream(externalDatabase), getApplicationContext());
                 new SetupTask().execute();
                 loadProgressBar.setVisibility(View.VISIBLE);
             } catch (IOException e) {

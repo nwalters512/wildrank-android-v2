@@ -1,6 +1,5 @@
 package org.wildstang.wildrank.androidv2.activities;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.net.Uri;
@@ -26,7 +25,6 @@ import org.wildstang.wildrank.androidv2.data.DatabaseManagerConstants;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -73,19 +71,11 @@ public class SyncActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == SyncUtilities.REQUEST_CODE_OPEN && resultCode == Activity.RESULT_OK) {
+        if (SyncUtilities.isOkAndOpen(requestCode, resultCode)) {
             //Copy the external DB file the user selected to internal storage, then sync from it
             externalFile = data.getData();
             try {
-                InputStream externalFileStream = getContentResolver().openInputStream(externalFile);
-                File syncCBLiteDir = new File(SyncUtilities.getExternalRootDirectory(getApplicationContext()) + File.separator + "wildrank.cblite2");
-                File internalDBCopy = new File(syncCBLiteDir.getPath() + File.separator + "db.sqlite3");
-                if (!internalDBCopy.exists()) {
-                    syncCBLiteDir.mkdirs();
-                    internalDBCopy.createNewFile();
-                }
-                OutputStream internalDBCopyStream = new FileOutputStream(internalDBCopy);
-                SyncUtilities.copyFromStreamToStream(externalFileStream, internalDBCopyStream);
+                SyncUtilities.copyExternalToInternal(getContentResolver().openInputStream(externalFile), getApplicationContext());
                 new SyncTask().execute();
             } catch (IOException e) {
                 e.printStackTrace();

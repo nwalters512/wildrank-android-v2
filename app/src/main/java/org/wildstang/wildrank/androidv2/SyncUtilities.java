@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.os.Build;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -19,7 +20,7 @@ public class SyncUtilities {
         return new File(getExternalRootDirectory(context)).exists();
     }
 
-    public static boolean useSAF(){
+    public static boolean useSAF() {
         return android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
     }
 
@@ -37,28 +38,39 @@ public class SyncUtilities {
     }
 
     public static String getExternalRootDirectory(Context context) {
-        if(databaseFolder == null)
-        {
+        if (databaseFolder == null) {
             //The location of the temp internal database used for sync should be
             //in the cache, since it is only needed for <1min at a time, and
             //created every time it is needed
-            if(useSAF())
-            {
+            if (useSAF()) {
                 File basePath = new File(context.getCacheDir() + File.separator + "externalDatabaseSync" + File.separator);
                 databaseFolder = basePath.getPath();
-            }
-            else {
+            } else {
                 return "/storage/usbdisk0/WildRank/cblite";
             }
         }
         return databaseFolder;
     }
 
-    public static void openFileChooser(Activity activity)
-    {
+    public static void openFileChooser(Activity activity) {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("*/*");
         activity.startActivityForResult(intent, SyncUtilities.REQUEST_CODE_OPEN);
+    }
+
+    public static boolean isOkAndOpen(int requestCode, int resultCode) {
+        return requestCode == REQUEST_CODE_OPEN && resultCode == Activity.RESULT_OK;
+    }
+
+    public static void copyExternalToInternal(InputStream externalDatabaseStream, Context context) throws IOException {
+        File internalDBCopyFolder = new File(SyncUtilities.getExternalRootDirectory(context) + File.separator + "wildrank.cblite2");
+        File internalDBCopyFile = new File(internalDBCopyFolder.getPath() + File.separator + "db.sqlite3");
+        if (!internalDBCopyFile.exists()) {
+            internalDBCopyFolder.mkdirs();
+            internalDBCopyFile.createNewFile();
+        }
+        OutputStream internalDBCopyStream = new FileOutputStream(internalDBCopyFile);
+        copyFromStreamToStream(externalDatabaseStream, internalDBCopyStream);
     }
 }
